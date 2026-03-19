@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>固定资产标签打印工具</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="panel form-panel">
+      <header>
+        <h1>固定资产标签打印工具</h1>
+        <p>填写资产信息后可直接调用 Windows 打印对话框，自行选择打印机输出 6cm × 4cm 标签。</p>
+      </header>
+
+      <form id="asset-form" class="asset-form">
+        <div class="grid two-cols">
+          <label>
+            <span>资产编码 <strong>*</strong></span>
+            <input type="text" id="assetCode" name="assetCode" placeholder="例如：FA-2026-001" required />
+          </label>
+          <label>
+            <span>资产名称 <strong>*</strong></span>
+            <input type="text" id="assetName" name="assetName" placeholder="例如：办公电脑" required />
+          </label>
+          <label>
+            <span>规格型号</span>
+            <input type="text" id="specModel" name="specModel" placeholder="例如：ThinkPad E14" />
+          </label>
+          <label>
+            <span>开始时间</span>
+            <input type="date" id="startDate" name="startDate" />
+          </label>
+          <label>
+            <span>使用部门</span>
+            <input type="text" id="department" name="department" placeholder="例如：财务部" />
+          </label>
+          <label>
+            <span>存放地点</span>
+            <input type="text" id="location" name="location" placeholder="例如：3楼档案室" />
+          </label>
+          <label>
+            <span>保管人</span>
+            <input type="text" id="keeper" name="keeper" placeholder="例如：张三" />
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button type="submit" class="primary">更新预览</button>
+          <button type="button" id="print-btn">打印标签</button>
+          <button type="button" id="reset-btn" class="secondary">清空表单</button>
+        </div>
+      </form>
+
+      <section class="tips">
+        <h2>使用说明</h2>
+        <ol>
+          <li>推荐在 Windows 的 Edge 或 Chrome 浏览器中打开本工具。</li>
+          <li>点击“打印标签”后会打开系统打印窗口，可自行选择已安装的 Gprinter GP-1224T 或其他打印机。</li>
+          <li>打印时请在打印机驱动或纸张设置中选择 60mm × 40mm 标签纸。</li>
+        </ol>
+      </section>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="preview-header">
+        <h2>标签预览</h2>
+        <span>成品尺寸：6cm × 4cm</span>
+      </div>
+
+      <div class="preview-stage">
+        <article class="label" id="label-preview">
+          <div class="label-text">
+            <div class="label-row">
+              <span class="label-key">资产编码</span>
+              <span class="label-value" data-field="assetCode">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">资产名称</span>
+              <span class="label-value" data-field="assetName">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">规格型号</span>
+              <span class="label-value" data-field="specModel">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">开始时间</span>
+              <span class="label-value" data-field="startDate">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">使用部门</span>
+              <span class="label-value" data-field="department">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">存放地点</span>
+              <span class="label-value" data-field="location">-</span>
+            </div>
+            <div class="label-row">
+              <span class="label-key">保管人</span>
+              <span class="label-value" data-field="keeper">-</span>
+            </div>
+          </div>
+          <div class="qr-wrapper">
+            <img id="qr-image" alt="资产编码二维码" />
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
