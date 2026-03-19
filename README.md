@@ -19,13 +19,16 @@
 为了适配低分辨率打印机，程序统一使用：
 
 - 字体：**黑体**（代码中为 `SimHei`）
+- 标题字号：`TITLE_FONT_SIZE = 11pt`
 - 桌面预览字号：`KEY_FONT_SIZE = 9`、`VALUE_FONT_SIZE = 9`
 - 打印字号：`HTML_FONT_SIZE_PT = 9pt`
+- 标签文字默认关闭换行逻辑，所有字段按单行显示
 
 如果你实际打印后觉得字太大或太小，可以直接修改 `app.py` 顶部这几个常量：
 
 ```python
 FONT_FAMILY = "SimHei"
+TITLE_FONT_SIZE = 11
 KEY_FONT_SIZE = 9
 VALUE_FONT_SIZE = 9
 HTML_FONT_SIZE_PT = 9
@@ -78,7 +81,7 @@ dist\AssetLabelPrinter.exe
 
 1. 打开程序，填写资产信息。
 2. 右侧会实时显示标签预览。
-3. 单条打印点击“打印当前”。
+3. 单条打印点击“打印当前”，标签顶部会居中显示“固定资产”。
 4. 批量打印先下载模板并填写，再导入 Excel。
 5. 点击“打印导入批量”一次生成全部标签。
 6. 在弹出的打印窗口里选择你的 **Gprinter GP-1224T** 或其他打印机。

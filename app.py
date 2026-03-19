@@ -24,6 +24,7 @@ FONT_FAMILY = "SimHei"
 KEY_FONT_SIZE = 9
 VALUE_FONT_SIZE = 9
 HTML_FONT_SIZE_PT = 9
+TITLE_FONT_SIZE = 11
 
 FIELDS = [
     ("asset_code", "资产编码", True),
@@ -255,9 +256,10 @@ class LabelPrinterApp:
             f"说明：\n"
             f"1. 本程序完全离线运行，二维码本地生成。\n"
             f"2. 当前字体固定为黑体（{FONT_FAMILY}），标签名和值之间已加入“： ”。\n"
-            f"3. 当前默认打印字号为 {HTML_FONT_SIZE_PT}pt，若实际打印偏大/偏小，可调整 app.py 中的\n"
-            f"   KEY_FONT_SIZE / VALUE_FONT_SIZE / HTML_FONT_SIZE_PT 常量。\n"
-            f"4. 点击打印后会生成本地 HTML 打印页，并调用浏览器打印对话框，\n"
+            f"3. 当前标题字号为 {TITLE_FONT_SIZE}pt，正文打印字号为 {HTML_FONT_SIZE_PT}pt；若实际打印偏大/偏小，可调整 app.py 中的\n"
+            f"   TITLE_FONT_SIZE / KEY_FONT_SIZE / VALUE_FONT_SIZE / HTML_FONT_SIZE_PT 常量。\n"
+            f"4. 当前标签已关闭换行逻辑，字段内容会单行显示。\n"
+            f"5. 点击打印后会生成本地 HTML 打印页，并调用浏览器打印对话框，\n"
             f"   这样你可以在 Windows 7 中自行选择 Gprinter GP-1224T。"
         )
         ttk.Label(form_frame, text=tips, justify="left").grid(
@@ -404,14 +406,22 @@ class LabelPrinterApp:
         canvas.create_rectangle(1, 1, LABEL_WIDTH_PX - 1, LABEL_HEIGHT_PX - 1, outline="#111111", width=1)
 
         left_margin = 10
-        top_margin = 10
-        row_height = 16
+        title_y = 8
+        row_start_y = 28
+        row_height = 14
         text_x = left_margin
         value_x = left_margin + 62
-        text_area_width = LABEL_WIDTH_PX - QR_SIZE_PX - 38
+
+        canvas.create_text(
+            LABEL_WIDTH_PX / 2,
+            title_y,
+            anchor="n",
+            text="固定资产",
+            font=(FONT_FAMILY, TITLE_FONT_SIZE, "bold"),
+        )
 
         for idx, (key, value) in enumerate(data.display_rows()):
-            y = top_margin + idx * row_height
+            y = row_start_y + idx * row_height
             canvas.create_text(
                 text_x,
                 y,
@@ -425,7 +435,6 @@ class LabelPrinterApp:
                 anchor="nw",
                 text=value,
                 font=(FONT_FAMILY, VALUE_FONT_SIZE),
-                width=text_area_width - 58,
             )
 
         qr_left = LABEL_WIDTH_PX - QR_SIZE_PX - 10
@@ -482,7 +491,7 @@ class LabelPrinterApp:
             )
             qr_svg = self._qr_to_svg(qr)
             labels_html.append(
-                f'<div class="label"><div class="content">{rows_html}</div><div class="qr">{qr_svg}</div></div>'
+                f'<div class="label"><div class="title">固定资产</div><div class="content">{rows_html}</div><div class="qr">{qr_svg}</div></div>'
             )
         joined = "\n".join(labels_html)
         return f"""<!DOCTYPE html>
@@ -505,10 +514,11 @@ class LabelPrinterApp:
     page-break-after: always;
   }}
   .label:last-child {{ page-break-after: auto; }}
+  .title {{ font-size: {TITLE_FONT_SIZE}pt; font-weight: bold; text-align: center; line-height: 1; margin-bottom: 0.08cm; }}
   .content {{ padding-right: 1.1cm; }}
-  .row {{ font-size: {HTML_FONT_SIZE_PT}pt; line-height: 1.2; margin-bottom: 0.06cm; }}
-  .key {{ display: inline-block; width: 1.35cm; font-weight: bold; vertical-align: top; }}
-  .value {{ display: inline-block; width: 3.45cm; word-break: break-all; white-space: normal; vertical-align: top; }}
+  .row {{ font-size: {HTML_FONT_SIZE_PT}pt; line-height: 1.05; margin-bottom: 0.03cm; white-space: nowrap; overflow: hidden; }}
+  .key {{ display: inline-block; width: 1.35cm; font-weight: bold; vertical-align: top; white-space: nowrap; }}
+  .value {{ display: inline-block; width: 3.45cm; white-space: nowrap; overflow: hidden; vertical-align: top; }}
   .qr {{ position: absolute; right: 0.2cm; bottom: 0.18cm; width: 1cm; height: 1cm; border: 1px solid #333; }}
   .qr svg {{ width: 100%; height: 100%; display: block; }}
 </style>
