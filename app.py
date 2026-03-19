@@ -10,16 +10,18 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import xml.etree.ElementTree as ET
 
-from qrcodegen import QrCodeError, make_qr
+from barcode39 import BarcodeError, make_barcode
 
 CM_TO_PX = 37.7952755906
 LABEL_WIDTH_CM = 6
 LABEL_HEIGHT_CM = 4
-QR_SIZE_CM = 1
+BARCODE_WIDTH_CM = 2.5
+BARCODE_HEIGHT_CM = 0.55
 CANVAS_SCALE = 4
 LABEL_WIDTH_PX = int(LABEL_WIDTH_CM * CM_TO_PX * CANVAS_SCALE / 3)
 LABEL_HEIGHT_PX = int(LABEL_HEIGHT_CM * CM_TO_PX * CANVAS_SCALE / 3)
-QR_SIZE_PX = int(QR_SIZE_CM * CM_TO_PX * CANVAS_SCALE / 3)
+BARCODE_WIDTH_PX = int(BARCODE_WIDTH_CM * CM_TO_PX * CANVAS_SCALE / 3)
+BARCODE_HEIGHT_PX = int(BARCODE_HEIGHT_CM * CM_TO_PX * CANVAS_SCALE / 3)
 FONT_FAMILY = "SimHei"
 KEY_FONT_SIZE = 9
 VALUE_FONT_SIZE = 9
@@ -33,7 +35,7 @@ FIELDS = [
     ("start_date", "开始时间", False),
     ("department", "使用部门", False),
     ("location", "存放地点", False),
-    ("keeper", "保管人", False),
+    ("keeper", "保管人员", False),
 ]
 FIELD_LABELS = {name: label for name, label, _ in FIELDS}
 FIELD_ORDER = [name for name, _, _ in FIELDS]
@@ -62,7 +64,7 @@ class AssetData:
             ("开始时间", self.start_date or "-"),
             ("使用部门", self.department or "-"),
             ("存放地点", self.location or "-"),
-            ("保管人", self.keeper or "-"),
+            ("保管人员", self.keeper or "-"),
         ]
 
     @classmethod
@@ -254,8 +256,8 @@ class LabelPrinterApp:
 
         tips = (
             f"说明：\n"
-            f"1. 本程序完全离线运行，二维码本地生成。\n"
-            f"2. 当前字体固定为黑体（{FONT_FAMILY}），标签名和值之间已加入“： ”。\n"
+            f"1. 本程序完全离线运行，条形码本地生成。\n"
+            f"2. 当前字体固定为黑体（{FONT_FAMILY}），标签名和值之间已加入“：  ”。\n"
             f"3. 当前标题字号为 {TITLE_FONT_SIZE}pt，正文打印字号为 {HTML_FONT_SIZE_PT}pt；若实际打印偏大/偏小，可调整 app.py 中的\n"
             f"   TITLE_FONT_SIZE / KEY_FONT_SIZE / VALUE_FONT_SIZE / HTML_FONT_SIZE_PT 常量。\n"
             f"4. 当前标签已关闭换行逻辑，字段内容会单行显示。\n"
@@ -317,11 +319,11 @@ class LabelPrinterApp:
     def refresh_preview(self) -> None:
         data = self.collect_data()
         try:
-            qr = make_qr(data.asset_code or "PREVIEW")
-        except QrCodeError:
-            qr = make_qr("PREVIEW")
+            barcode = make_barcode(data.asset_code or "PREVIEW")
+        except BarcodeError:
+            barcode = make_barcode("PREVIEW")
 
-        self._draw_label(data, qr)
+        self._draw_label(data, barcode)
         self.status_var.set("预览已更新，可直接打印。")
 
     def clear_form(self) -> None:
@@ -399,18 +401,16 @@ class LabelPrinterApp:
         self._refresh_batch_info()
         self.status_var.set(f"当前查看批量记录第 {self.batch_index + 1} 条。")
 
-    def _draw_label(self, data: AssetData, qr) -> None:
+    def _draw_label(self, data: AssetData, barcode) -> None:
         assert self.canvas is not None
         canvas = self.canvas
         canvas.delete("all")
-        canvas.create_rectangle(1, 1, LABEL_WIDTH_PX - 1, LABEL_HEIGHT_PX - 1, outline="#111111", width=1)
-
         left_margin = 10
         title_y = 8
         row_start_y = 28
-        row_height = 14
+        row_height = 13
         text_x = left_margin
-        value_x = left_margin + 62
+        value_x = left_margin + 72
 
         canvas.create_text(
             LABEL_WIDTH_PX / 2,
@@ -426,7 +426,7 @@ class LabelPrinterApp:
                 text_x,
                 y,
                 anchor="nw",
-                text=f"{key}： ",
+                text=f"{key}：  ",
                 font=(FONT_FAMILY, KEY_FONT_SIZE, "bold"),
             )
             canvas.create_text(
@@ -437,23 +437,20 @@ class LabelPrinterApp:
                 font=(FONT_FAMILY, VALUE_FONT_SIZE),
             )
 
-        qr_left = LABEL_WIDTH_PX - QR_SIZE_PX - 10
-        qr_top = LABEL_HEIGHT_PX - QR_SIZE_PX - 10
-        self._draw_qr(canvas, qr, qr_left, qr_top, QR_SIZE_PX)
+        barcode_left = 10
+        barcode_top = LABEL_HEIGHT_PX - BARCODE_HEIGHT_PX - 8
+        self._draw_barcode(canvas, barcode, barcode_left, barcode_top, LABEL_WIDTH_PX - 20, BARCODE_HEIGHT_PX)
 
-    def _draw_qr(self, canvas: tk.Canvas, qr, left: int, top: int, size: int) -> None:
-        canvas.create_rectangle(left, top, left + size, top + size, outline="#222222", width=1)
-        quiet = 2
-        cells = qr.size + quiet * 2
-        scale = size / float(cells)
-        for y in range(qr.size):
-            for x in range(qr.size):
-                if qr.get_module(x, y):
-                    x0 = left + (x + quiet) * scale
-                    y0 = top + (y + quiet) * scale
-                    x1 = left + (x + quiet + 1) * scale
-                    y1 = top + (y + quiet + 1) * scale
-                    canvas.create_rectangle(x0, y0, x1, y1, outline="", fill="#000000")
+    def _draw_barcode(self, canvas: tk.Canvas, barcode, left: int, top: int, width: int, height: int) -> None:
+        quiet_units = 10
+        total_units = barcode.total_units + quiet_units * 2
+        unit_width = width / float(total_units)
+        x = left + quiet_units * unit_width
+        for is_bar, module_width in barcode.modules:
+            span = module_width * unit_width
+            if is_bar:
+                canvas.create_rectangle(x, top, x + span, top + height, outline="", fill="#000000")
+            x += span
 
     def print_current_label(self) -> None:
         data = self.collect_data()
@@ -484,14 +481,14 @@ class LabelPrinterApp:
     def _build_print_html(self, records: list[AssetData], title: str) -> str:
         labels_html = []
         for data in records:
-            qr = make_qr(data.asset_code)
+            barcode = make_barcode(data.asset_code)
             rows_html = "\n".join(
-                f'<div class="row"><span class="key">{escape(key)}： </span><span class="value">{escape(value)}</span></div>'
+                f'<div class="row"><span class="key">{escape(key)}：  </span><span class="value">{escape(value)}</span></div>'
                 for key, value in data.display_rows()
             )
-            qr_svg = self._qr_to_svg(qr)
+            barcode_svg = self._barcode_to_svg(barcode)
             labels_html.append(
-                f'<div class="label"><div class="title">固定资产</div><div class="content">{rows_html}</div><div class="qr">{qr_svg}</div></div>'
+                f'<div class="label"><div class="title">固定资产</div><div class="content">{rows_html}</div><div class="barcode">{barcode_svg}</div></div>'
             )
         joined = "\n".join(labels_html)
         return f"""<!DOCTYPE html>
@@ -506,33 +503,34 @@ class LabelPrinterApp:
   .label {{
     width: 6cm;
     height: 4cm;
-    border: 1px solid #111;
     box-sizing: border-box;
     padding: 0.22cm 0.2cm 0.18cm 0.2cm;
     position: relative;
     overflow: hidden;
-    page-break-after: always;
   }}
-  .label:last-child {{ page-break-after: auto; }}
+  .label + .label {{ page-break-before: always; }}
   .title {{ font-size: {TITLE_FONT_SIZE}pt; font-weight: bold; text-align: center; line-height: 1; margin-bottom: 0.08cm; }}
-  .content {{ padding-right: 1.1cm; }}
+  .content {{ padding-bottom: 0.72cm; }}
   .row {{ font-size: {HTML_FONT_SIZE_PT}pt; line-height: 1.05; margin-bottom: 0.03cm; white-space: nowrap; overflow: hidden; }}
-  .key {{ display: inline-block; width: 1.35cm; font-weight: bold; vertical-align: top; white-space: nowrap; }}
-  .value {{ display: inline-block; width: 3.45cm; white-space: nowrap; overflow: hidden; vertical-align: top; }}
-  .qr {{ position: absolute; right: 0.2cm; bottom: 0.18cm; width: 1cm; height: 1cm; border: 1px solid #333; }}
-  .qr svg {{ width: 100%; height: 100%; display: block; }}
+  .key {{ display: inline-block; width: 1.55cm; font-weight: bold; vertical-align: top; white-space: nowrap; }}
+  .value {{ display: inline-block; width: 3.65cm; white-space: nowrap; overflow: hidden; vertical-align: top; }}
+  .barcode {{ position: absolute; left: 0.2cm; right: 0.2cm; bottom: 0.15cm; height: 0.55cm; }}
+  .barcode svg {{ width: 100%; height: 100%; display: block; }}
 </style>
 </head>
 <body onload=\"window.print()\">{joined}</body>
 </html>"""
 
-    def _qr_to_svg(self, qr) -> str:
-        parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {qr.size + 4} {qr.size + 4}" shape-rendering="crispEdges">']
+    def _barcode_to_svg(self, barcode) -> str:
+        quiet_units = 10
+        total_units = barcode.total_units + quiet_units * 2
+        parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {total_units} 100" shape-rendering="crispEdges">']
         parts.append('<rect width="100%" height="100%" fill="#fff"/>')
-        for y in range(qr.size):
-            for x in range(qr.size):
-                if qr.get_module(x, y):
-                    parts.append(f'<rect x="{x + 2}" y="{y + 2}" width="1" height="1" fill="#000"/>')
+        x = quiet_units
+        for is_bar, module_width in barcode.modules:
+            if is_bar:
+                parts.append(f'<rect x="{x}" y="0" width="{module_width}" height="100" fill="#000"/>')
+            x += module_width
         parts.append("</svg>")
         return "".join(parts)
 
